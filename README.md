@@ -1,304 +1,337 @@
-# Aplicación Flask Contenerizada con Docker y GitHub Actions
+# Proyecto 4 - Entregable 5: CI/CD y Despliegue en Azure
 
-## 📋 Descripción del Proyecto
+Implementación completa de **Integración Continua (CI) y Despliegue Continuo (CD)** para una aplicación FastAPI con base de datos MySQL, contenerizada con Docker y desplegada en Azure Container Instances (ACI).
 
-Este proyecto demuestra cómo contenerizar una aplicación Flask utilizando Docker y automatizar su despliegue en Docker Hub mediante un pipeline de CI/CD con GitHub Actions.
+## 🎯 Objetivos Alcanzados
 
-### 🎯 Características
+- ✅ **Configuración de Entorno**: Estructura de código + variables de entorno
+- ✅ **Contenerización**: Dockerfile para FastAPI + docker-compose para desarrollo local
+- ✅ **Registro en Azure**: Azure Container Registry (ACR) para almacenar imágenes
+- ✅ **Despliegue en Azure**: Automatización con GitHub Actions → ACI
+- ✅ **Pipeline CI/CD**: Tests automáticos, build, push y despliegue
+- ✅ **Monitoreo**: Logs, health checks y validación de funcionamiento
 
-- **Aplicación Flask Simple**: Una API REST básica con múltiples endpoints
-- **Contenerización con Docker**: Imagen optimizada basada en Python 3.11-slim
-- **Pruebas Automatizadas**: Suite de tests con pytest ejecutadas en el contenedor
-- **Pipeline CI/CD**: Automatización completa con GitHub Actions
-  - ✅ Build de la imagen Docker
-  - ✅ Ejecución de pruebas
-  - ✅ Push automático a Docker Hub
-- **Documentación Completa**: Instrucciones detalladas para desarrollo y deployment
+
 
 ## 📦 Requisitos Previos
 
-Para trabajar con este proyecto necesitas tener instalado:
-
-- **Docker** 20.10+ ([Instalar Docker Desktop](https://www.docker.com/products/docker-desktop))
-- **Docker Compose** (incluido con Docker Desktop)
+### Software Local
+- **Docker Desktop** 20.10+ ([Descargar](https://www.docker.com/products/docker-desktop))
+- **Docker Compose** 1.29+ (incluido con Docker Desktop)
 - **Git** 2.30+
-- **Python 3.11+** (solo si ejecutas localmente sin Docker)
+- **Azure CLI** (`az` command) ([Descargar](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli))
+- **Python** 3.11+ (opcional, para tests locales)
 
-## 🚀 Inicio Rápido con Docker
+### Requisitos Azure
+- Cuenta Azure **activa**
+- **Suscripción** con acceso a:
+  - Azure Container Registry (ACR)
+  - Azure Container Instances (ACI)
+- **Resource Group** creado (e.g., `Proyecto4RG`)
+- **Autenticación** con `az login`
 
-### 1. Clonar el repositorio
+### Requisitos GitHub
+- **Repositorio** con este código
+- Acceso a **Settings → Secrets and variables → Actions**
 
+
+
+## 🚀 Inicio Rápido (Desarrollo Local)
+
+### 1. Clonar y Configurar
 ```bash
-git clone https://github.com/psiete/entregable4.git
-cd entregable4
+git clone <tu-repo-url>
+cd Proyecto4
+cp .env.example .env  # (ya existe .env configurado)
 ```
 
-### 2. Construir la imagen Docker
-
+### 2. Ejecutar con Docker Compose
 ```bash
-docker build -t flask-app:latest .
+# Build e iniciar contenedores (app + MySQL)
+docker-compose up --build
+
+# La aplicación estará en: http://localhost:8000
+# Documentación interactiva: http://localhost:8000/docs
 ```
 
-### 3. Ejecutar el contenedor
-
+### 3. Pruebas
 ```bash
-docker run -p 5000:5000 flask-app:latest
+# Dentro del contenedor, o localmente si Python está instalado
+python -m pytest test_app.py -v
+
+# En navegador
+curl http://localhost:8000/
 ```
 
-La aplicación estará disponible en `http://localhost:5000`
+### 4. Parar Servicios
+```bash
+docker-compose down
+docker-compose down -v  # También elimina volúmenes (datos BD)
+```
 
-### 4. Verificar que funciona
+---
+
+## 📋 Fases de Implementación
+
+Este proyecto sigue un plan estructurado en **6 fases**:
+
+| Fase | Descripción | Estado | Documentación |
+|------|-------------|--------|---------------|
+| **1** | Sincronización de código (FastAPI ↔ Dockerfile) | ✅ COMPLETADO | - |
+| **2** | Docker Compose + variables de entorno | ✅ COMPLETADO | - |
+| **3** | Preparación de Azure (ACR) | 📖 Guía | [FASE3_AZURE_SETUP.md](FASE3_AZURE_SETUP.md) |
+| **4** | Despliegue manual en ACI | 📖 Guía | [FASE4_DESPLIEGUE_MANUAL.md](FASE4_DESPLIEGUE_MANUAL.md) |
+| **5** | GitHub Actions (CI/CD) | ✅ Workflows listos | [FASE5_GITHUB_ACTIONS.md](FASE5_GITHUB_ACTIONS.md) |
+| **6** | Monitoreo y validación | 📖 Guía | [FASE6_MONITOREO.md](FASE6_MONITOREO.md) |
+
+---
+
+## 📖 Guías por Fase
+
+### 🔴 **REQUERIDA ACCIÓN MANUAL - Fase 3: Preparación de Azure**
+
+Antes de poder desplegar en Azure, necesitas:
+
+1. **Crear Azure Container Registry (ACR)**
+   ```bash
+   az acr create --resource-group Proyecto4RG --name proyecto4acr --sku Basic
+   ```
+
+2. **Obtener credenciales ACR e instancia de Service Principal**
+   - Ver detalles completos en: **[FASE3_AZURE_SETUP.md](FASE3_AZURE_SETUP.md)**
+
+3. **Configurar Secrets en GitHub** (9 valores)
+   - Acceder a Settings → Secrets and variables → Actions
+   - Crear secrets: `AZURE_REGISTRY_*`, `AZURE_CREDENTIALS`, `MYSQL_*`, etc.
+
+### 🔴 **REQUERIDA ACCIÓN MANUAL - Fase 4: Despliegue Inicial**
+
+Una vez configurado ACR:
+
+1. **Desplegar Base de Datos MySQL en ACI**
+   ```bash
+   # Ver FASE4_DESPLIEGUE_MANUAL.md para comando completo
+   az container create ... (contiene las variables correctas)
+   ```
+
+2. **Build, Push y Desplegar Aplicación**
+   - Push de imagen a ACR
+   - Despliegue del contenedor en ACI
+   - Obtener IP pública
+
+3. **Validar Acceso**
+   ```bash
+   curl http://<APP_IP>:8000/
+   ```
+
+**Guía completa:** [FASE4_DESPLIEGUE_MANUAL.md](FASE4_DESPLIEGUE_MANUAL.md)
+
+### ✅ **Fase 5: GitHub Actions (AUTOMÁTICO después de Fase 3)**
+
+Una vez configurados los Secrets de GitHub, el pipeline es **completamente automático**:
+
+```
+git push → GitHub Actions (Build & Push) → ACR 
+                                              ↓
+                                    Deploy to ACI
+```
+
+**Workflows incluidos:**
+- `.github/workflows/build-push.yml` → Tests + Build + Push a ACR
+- `.github/workflows/deploy.yml` → Deploy automático a ACI
+
+**Configuración:** [FASE5_GITHUB_ACTIONS.md](FASE5_GITHUB_ACTIONS.md)
+
+### 📊 **Fase 6: Monitoreo y Validación**
+
+Una vez desplegado, monitorear con:
 
 ```bash
-# Ruta raíz
-curl http://localhost:5000/
+# Ver logs
+az container logs -g Proyecto4RG -n fastapi-app-produccion --follow
 
-# Ruta de información
-curl http://localhost:5000/api/info
+# Test de conectividad
+curl http://<APP_IP>:8000/docs
 
 # Health check
-curl http://localhost:5000/health
+curl http://<APP_IP>:8000/
 ```
 
-## 🧪 Ejecutar las Pruebas
+**Guía completa:** [FASE6_MONITOREO.md](FASE6_MONITOREO.md)
 
-### En el contenedor
 
-```bash
-# Construir imagen
-docker build -t flask-app:test .
-
-# Ejecutar pytest
-docker run --rm flask-app:test pytest test_app.py -v
-```
-
-### Localmente (sin Docker)
-
-```bash
-# Instalar dependencias
-pip install -r requirements.txt
-
-# Ejecutar tests
-pytest test_app.py -v
-```
-
-## 🔑 Configurar Secretos en GitHub
-
-Para que el pipeline pueda hacer push a Docker Hub, necesitas configurar dos secretos en tu repositorio:
-
-### 1. Ir a la configuración del repositorio
-
-- En GitHub, ve a **Settings** → **Secrets and variables** → **Actions**
-
-### 2. Crear `DOCKERHUB_USERNAME`
-
-- Click en **New repository secret**
-- **Name**: `DOCKERHUB_USERNAME`
-- **Value**: Tu nombre de usuario en Docker Hub
-- Click en **Add secret**
-
-### 3. Crear `DOCKERHUB_TOKEN`
-
-- Click en **New repository secret**
-- **Name**: `DOCKERHUB_TOKEN`
-- **Value**: Tu token de acceso en Docker Hub
-
-Para generar el token en Docker Hub:
-1. Inicia sesión en [Docker Hub](https://hub.docker.com)
-2. Ve a **Account Settings** → **Security**
-3. Click en **New Access Token**
-4. Dale un nombre descriptivo
-5. Copia el token y pégalo en GitHub
-
-### ✅ Verificar la configuración
-
-Una vez configurados los secretos, el pipeline automáticamente:
-- Construirá la imagen
-- Ejecutará los tests
-- Hará push a Docker Hub en cada push a `main`
 
 ## 📁 Estructura del Proyecto
 
 ```
-entregable4/
-├── app.py                          # Aplicación Flask principal
-├── test_app.py                     # Suite de tests con pytest
-├── requirements.txt                # Dependencias de Python
-├── Dockerfile                      # Configuración de Docker
-├── README.md                       # Este archivo
-└── .github/
-    └── workflows/
-        └── ci.yml                  # Pipeline de GitHub Actions
+Proyecto4/
+├── app.py                        # Aplicación FastAPI
+├── test_app.py                   # Tests con pytest
+├── requirements.txt              # Dependencias Python
+├── Dockerfile                    # Imagen Docker (FastAPI + uvicorn)
+├── docker-compose.yml            # Orquestación local (app + mysql)
+├── init.sql                      # Script de inicialización BD
+│
+├── .env.example                  # Plantilla de variables
+├── .env                          # Config local (PROTEGIDO en .gitignore)
+├── .gitignore                    # Archivos a ignorar en git
+│
+├── .github/workflows/
+│   ├── build-push.yml            # CI: Tests + Build + Push a ACR
+│   └── deploy.yml                # CD: Deploy automático a ACI
+│
+├── FASE3_AZURE_SETUP.md          # Crear ACR y Service Principal
+├── FASE4_DESPLIEGUE_MANUAL.md    # Desplegar MySQL y app en ACI
+├── FASE5_GITHUB_ACTIONS.md       # Configurar secrets y workflows
+├── FASE6_MONITOREO.md            # Logs y validación en Azure
+│
+└── README.md                     # Este archivo
 ```
 
-## 🔄 Descripción del Pipeline CI/CD
+---
 
-### Etapa 1: Build
+## 🔄 Flujo Completo de CI/CD
 
-- **Trigger**: Push o Pull Request a `main`
-- **Acciones**:
-  - Checkout del código
-  - Configuración de Docker Buildx
-  - Construcción de la imagen Docker
-  - Almacenamiento en caché para builds futuros
+```
+DESARROLLO LOCAL                      GITHUB                     AZURE
+─────────────────                   ────────                    ──────
 
-### Etapa 2: Test
+1. git push a main  ──────────→  Actions: Build & Push
+                                      ├── Tests (pytest)
+                                      ├── Build (docker)
+                                      └── Push → ACR
 
-- **Dependencia**: Requiere que Build sea exitoso
-- **Acciones**:
-  - Reconstruye la imagen Docker
-  - Instala pytest y pytest-cov dentro del contenedor
-  - Ejecuta la suite de tests
-  - Genera reporte de cobertura de código
+2. Build: OK  ───────────────→  Actions: Deploy
+                                   ├── Obtiene IP MySQL
+                                   ├── Deploy app → ACI
+                                   └── Obtiene IP pública
 
-### Etapa 3: Push
+3. ✅ App Live  ◄──────────────────────────────── http://<IP>:8000
+```
 
-- **Trigger**: Solo en push a `main` (no en PRs)
-- **Dependencia**: Requiere que Test sea exitoso
-- **Acciones**:
-  - Login a Docker Hub con credenciales seguras
-  - Build y push de la imagen con dos tags:
-    - `psiete/flask-app:sha-del-commit` (versión específica)
-    - `psiete/flask-app:latest` (última versión)
-  - Utiliza caché de registry para acelerar builds futuros
+
 
 ## 🔗 Endpoints de la Aplicación
 
 ### GET `/`
-
-Ruta raíz que responde con un mensaje de saludo.
+Información general de la API
 
 ```bash
-curl http://localhost:5000/
+curl http://localhost:8000/
 ```
 
 **Respuesta**:
 ```json
 {
-  "message": "¡Hola desde Flask en Docker!",
-  "status": "success"
+  "message": "API de gestión de tareas",
+  "endpoints": {
+    "GET /user-stories": "Obtener todas las historias de usuario",
+    "POST /user-stories": "Crear una nueva historia de usuario",
+    "GET /user-stories/{id}/tasks": "Obtener tareas de una historia",
+    "POST /user-stories/{id}/generate-tasks": "Generar tareas con IA"
+  }
 }
 ```
 
-### GET `/api/info`
+### 📚 GET `/docs`
+Documentación interactiva (Swagger UI)
 
-Proporciona información sobre la aplicación.
+```
+http://localhost:8000/docs
+```
+
+### 📋 GET `/openapi.json`
+Especificación OpenAPI (JSON)
 
 ```bash
-curl http://localhost:5000/api/info
+curl http://localhost:8000/openapi.json | jq .
 ```
-
-**Respuesta**:
-```json
-{
-  "app_name": "Flask Docker Application",
-  "version": "1.0.0",
-  "environment": "containerized"
-}
-```
-
-### GET `/health`
-
-Health check para verificar que la aplicación funciona correctamente.
-
-```bash
-curl http://localhost:5000/health
-```
-
-**Respuesta**:
-```json
-{
-  "status": "healthy",
-  "message": "La aplicación está funcionando correctamente"
-}
-```
-
-## 🛑 Solución de Problemas
-
-### El contenedor no inicia
-
-```bash
-# Ver logs del contenedor
-docker logs <container-id>
-
-# Ejecutar en modo interactivo para debug
-docker run -it flask-app:latest /bin/bash
-```
-
-### El puerto 5000 ya está en uso
-
-Si ves un error como `bind: address already in use`, significa que otro proceso está usando el puerto 5000.
-
-**Opción 1: Usar un puerto diferente**
-
-```bash
-# Ejecutar en el puerto 5001 en lugar de 5000
-docker run -p 5001:5000 flask-app:latest
-
-# Ahora accede a http://localhost:5001
-```
-
-**Opción 2: Identificar y detener el proceso que usa el puerto 5000 (macOS/Linux)**
-
-```bash
-# Ver qué proceso está usando el puerto 5000
-lsof -i :5000
-
-# Detener el contenedor que está en ejecución
-docker ps  # Obtener el ID del contenedor
-docker stop <container-id>
-
-# O terminar el proceso directamente
-kill -9 <PID>
-```
-
-**Opción 3: En Windows (PowerShell)**
-
-```powershell
-# Ver qué proceso está usando el puerto 5000
-netstat -ano | findstr :5000
-
-# Terminar el proceso (reemplaza PID con el número del proceso)
-taskkill /PID <PID> /F
-```
-
-### Los tests fallan en el contenedor
-
-```bash
-# Ejecutar tests con output detallado
-docker run --rm flask-app:test pytest test_app.py -vv --tb=short
-```
-
-### El push a Docker Hub falla en GitHub Actions
-
-- ✅ Verificar que los secretos `DOCKERHUB_USERNAME` y `DOCKERHUB_TOKEN` están configurados
-- ✅ Verificar que el token no ha expirado
-- ✅ Asegurarse que la rama es `main` (el push solo ocurre en `main`)
-
-## 🔐 Buenas Prácticas de Seguridad
-
-1. **Secretos en GitHub**: Nunca commits credenciales en el repositorio
-2. **Imagen slim**: Se usa `python:3.11-slim` para reducir superficie de ataque
-3. **Cache de registry**: Se utiliza caché de Docker registry para ahorrar ancho de banda
-4. **Layer caching**: Dockerfile optimizado para aprovechar caché de capas
-5. **Variables de entorno**: `PYTHONUNBUFFERED=1` para mejor logging en contenedores
-
-## 📚 Recursos Útiles
-
-- [Documentación oficial de Flask](https://flask.palletsprojects.com/)
-- [Documentación oficial de Docker](https://docs.docker.com/)
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [Docker Hub](https://hub.docker.com/)
-- [Pytest Documentation](https://docs.pytest.org/)
-
-## 📝 Licencia
-
-Este proyecto es de código abierto y está disponible bajo la licencia MIT.
-
-## 🤝 Contribuciones
-
-Las contribuciones son bienvenidas. Por favor, abre un issue o un pull request para sugerencias y mejoras.
 
 ---
 
-**Última actualización**: 1 de marzo de 2026
+## ⚠️ Troubleshooting
+
+### Docker Compose no inicia
+
+```bash
+# Ver logs detallados
+docker-compose logs -f
+
+# Reiniciar limpiamente
+docker-compose down -v
+docker-compose up --build
+```
+
+### Tests fallan
+
+```bash
+# Ejecutar tests con verbose
+python -m pytest test_app.py -v --tb=short
+
+# Dentro del contenedor
+docker-compose exec app pytest test_app.py -v
+```
+
+### Acceso a Base de Datos local
+
+```bash
+# Conectarse a MySQL desde otro contenedor
+docker-compose exec mysql mysql -u proyecto_user -p proyecto_db
+
+# Contraseña: changeme123!
+```
+
+### Contenedores fallan en Azure
+
+**Revisar:**
+1. Logs de aplicación: `az container logs ... --follow`
+2. Variables de entorno: `az container show ... --query containers[0].environmentVariables`
+3. Estado del contenedor: `az container show ... --query containers[0].instanceView.events`
+
+Ver [FASE6_MONITOREO.md](FASE6_MONITOREO.md) para más detalles.
+
+---
+
+## 📚 Documentación Completa
+
+| Sección | Archivo |
+|---------|---------|
+| **Configuración ACR en Azure** | [FASE3_AZURE_SETUP.md](FASE3_AZURE_SETUP.md) |
+| **Despliegue manual en ACI** | [FASE4_DESPLIEGUE_MANUAL.md](FASE4_DESPLIEGUE_MANUAL.md) |
+| **GitHub Actions y Secrets** | [FASE5_GITHUB_ACTIONS.md](FASE5_GITHUB_ACTIONS.md) |
+| **Monitoreo y validación** | [FASE6_MONITOREO.md](FASE6_MONITOREO.md) |
+
+---
+
+## 🔐 Notas de Seguridad
+
+⚠️ **IMPORTANTE ANTES DE PRODUCCIÓN:**
+
+1. ✅ Cambiar contraseñas de MYSQL en `.env`
+2. ✅ Usar Azure Key Vault para secrets (no GitHub Secrets)
+3. ✅ Rotar credenciales de ACR periódicamente
+4. ✅ Habilitar SSL/TLS con Azure Front Door
+5. ✅ Configurar Azure Firewall para restricción de IPs
+
+---
+
+## 🚀 Próximos Pasos
+
+1. **Completar Fase 3**: Crear ACR en Azure
+2. **Completar Fase 4**: Desplegar MySQL y app manualmente
+3. **Configurar Fase 5**: Secrets en GitHub
+4. **Monitorear Fase 6**: Validar que todo funciona
+
+---
+
+## 📞 Soporte
+
+- Guías de cada fase en archivos `FASEx_*.md`
+- Logs en Azure: `az container logs -g Proyecto4RG -n <container>`
+- GitHub Actions: Pestaña "Actions" en el repositorio
+
+---
+
+**Última actualización:** 5 de marzo de 2026  
+**Versión:** 1.0.0 (Entregable 5)  
+**Asignatura:** Programa Avanzado en IA para Programar - UNIR

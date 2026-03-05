@@ -13,13 +13,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar el código de la aplicación y tests al contenedor
 COPY *.py .
 
-# Exponer el puerto 5000 (puerto estándar para Flask)
-EXPOSE 5000
+# Exponer el puerto 8000 (puerto estándar para FastAPI)
+EXPOSE 8000
 
-# Establecer variables de entorno para Flask
-ENV FLASK_APP=app.py
+# Establecer variables de entorno
 ENV PYTHONUNBUFFERED=1
+ENV APP_ENV=production
 
-# Comando para ejecutar la aplicación Flask
-# Se ejecuta gunicorn en lugar de flask run para mayor estabilidad en producción
-CMD ["python", "-m", "flask", "run", "--host=0.0.0.0"]
+# Comando para ejecutar la aplicación FastAPI con uvicorn
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]

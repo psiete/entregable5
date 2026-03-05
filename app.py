@@ -1,57 +1,60 @@
-"""
-Aplicación Flask simple para demostración de contenerización con Docker.
-"""
+"""Aplicación principal FastAPI para gestión de tareas y historias de usuario."""
 
-from flask import Flask, jsonify
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from pathlib import Path
+from lib.database import init_db
+from lib.routes import router
 
-# Crear instancia de la aplicación Flask
-app = Flask(__name__)
 
-
-@app.route('/')
-def hello():
-    """
-    Ruta raíz que responde con un mensaje de saludo.
+def create_app() -> FastAPI:
+    """Crea y configura la aplicación FastAPI.
     
     Returns:
-        dict: Mensaje de saludo en formato JSON
+        Instancia configurada de FastAPI.
     """
-    return jsonify({
-        'message': '¡Hola desde Flask en Docker!',
-        'status': 'success'
-    }), 200
-
-
-@app.route('/api/info')
-def info():
-    """
-    Ruta adicional que proporciona información de la aplicación.
+    app = FastAPI(
+        title="API de Gestión de Tareas",
+        description="Sistema de generación de tareas a partir de historias de usuario",
+        version="1.0.0"
+    )
     
-    Returns:
-        dict: Información de la aplicación en formato JSON
-    """
-    return jsonify({
-        'app_name': 'Flask Docker Application',
-        'version': '1.0.0',
-        'environment': 'containerized'
-    }), 200
-
-
-@app.route('/health')
-def health_check():
-    """
-    Ruta de verificación de salud para comprobar que la app está funcionando.
+    # Inicializar base de datos
+    init_db()
     
-    Returns:
-        dict: Estado de salud de la aplicación
-    """
-    return jsonify({
-        'status': 'healthy',
-        'message': 'La aplicación está funcionando correctamente'
-    }), 200
+    # Incluir router principal
+    app.include_router(router)
+    
+    # Montar carpeta de templates/static si existe
+    templates_path = Path(__file__).parent / "templates"
+    if templates_path.exists():
+        try:
+            app.mount("/static", StaticFiles(directory=str(templates_path)), name="static")
+        except Exception:
+            pass
+    
+    @app.get("/")
+    async def home():
+        """Ruta de inicio."""
+        return {
+            "message": "API de gestión de tareas",
+            "endpoints": {
+                "GET /user-stories": "Obtener todas las historias de usuario",
+                "POST /user-stories": "Crear una nueva historia de usuario",
+                "GET /user-stories/{id}/tasks": "Obtener tareas de una historia",
+                "POST /user-stories/{id}/generate-tasks": "Generar tareas con IA"
+            }
+        }
+    
+    return app
 
 
-if __name__ == '__main__':
-    # Ejecutar la app en modo debug en desarrollo
-    # En producción en Docker, se usará en modo no-debug
-    app.run(host='0.0.0.0', port=5000, debug=False)
+# Crear instancia global de la aplicación para uvicorn
+app = create_app()
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+

@@ -1,0 +1,102 @@
+name: Deploy to Azure Container Instances
+
+on:
+  workflow_run:
+    workflows: ["Build and Push to ACR"]
+    types: [completed]
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      # 1. Autenticarse en Azure
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # 2. Obtener IP de MySQL (si el contenedor ya existe)
+      - name: Get MySQL IP
+        id: get-mysql-ip
+        run: |
+          MYSQL_IP=$(az container show \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --name mysql-bd-produccion \
+            --query ipAddress.ip -o tsv 2>/dev/null || echo "")
+          
+          if [ -z "$MYSQL_IP" ]; then
+            echo "⚠️ Contenedor MySQL no encontrado. Crear primero con FASE4_DESPLIEGUE_MANUAL.md"
+            echo "mysql_ip=" >> $GITHUB_OUTPUT
+          else
+            echo "✅ MySQL IP: $MYSQL_IP"
+            echo "mysql_ip=$MYSQL_IP" >> $GITHUB_OUTPUT
+          fi
+
+      # 3. Actualizar o crear contenedor de la app
+      - name: Deploy App to ACI
+        if: steps.get-mysql-ip.outputs.mysql_ip != ''
+        run: |
+          # Eliminar contenedor anterior si existe
+          az container delete \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --name fastapi-app-produccion \
+            --yes 2>/dev/null || true
+
+          # Crear nuevo contenedor con la última imagen
+          az container create \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --name fastapi-app-produccion \
+            --image ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/mi-backend:latest \
+            --cpu 1 \
+            --memory 1 \
+            --environment-variables \
+              MYSQL_HOST="${{ steps.get-mysql-ip.outputs.mysql_ip }}" \
+              MYSQL_PORT="3306" \
+              MYSQL_USER="${{ secrets.MYSQL_USER }}" \
+              MYSQL_PASSWORD="${{ secrets.MYSQL_PASSWORD }}" \
+              MYSQL_DATABASE="${{ secrets.MYSQL_DATABASE }}" \
+              APP_ENV="production" \
+            --registry-login-server ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }} \
+            --registry-username ${{ secrets.AZURE_REGISTRY_USERNAME }} \
+            --registry-password ${{ secrets.AZURE_REGISTRY_PASSWORD }} \
+            --ports 8000 \
+            --protocol TCP \
+            --restart-policy OnFailure
+
+      # 4. Esperar a que el contenedor esté listo
+      - name: Wait for deployment
+        if: steps.get-mysql-ip.outputs.mysql_ip != ''
+        run: |
+          sleep 30
+          echo "Esperando a que la aplicación esté lista..."
+
+      # 5. Obtener IP pública de la aplicación
+      - name: Get App IP
+        if: steps.get-mysql-ip.outputs.mysql_ip != ''
+        run: |
+          APP_IP=$(az container show \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --name fastapi-app-produccion \
+            --query ipAddress.ip -o tsv)
+          
+          echo "✅ Aplicación desplegada en: http://${APP_IP}:8000"
+          echo "📚 Documentación en: http://${APP_IP}:8000/docs"
+
+      # 6. Notificación de despliegue
+      - name: Deployment Success
+        if: steps.get-mysql-ip.outputs.mysql_ip != ''
+        run: |
+          echo "✅ Despliegue completado exitosamente"
+          echo "Próximos pasos:"
+          echo "1. Verificar logs: az container logs -g ${{ secrets.AZURE_RESOURCE_GROUP }} -n fastapi-app-produccion"
+          echo "2. Visitar la aplicación en la IP mostrada arriba"
+
+      - name: Deployment Warning
+        if: steps.get-mysql-ip.outputs.mysql_ip == ''
+        run: |
+          echo "⚠️ MySQL no está desplegado"
+          echo "Seguir FASE4_DESPLIEGUE_MANUAL.md para desplegar MySQL primero"
