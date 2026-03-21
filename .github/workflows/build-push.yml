@@ -1,4 +1,11 @@
-name: Build and Push to ACR
+name: Build and Push to Azure Container Registry
+
+# SECRETS REQUERIDOS EN GITHUB:
+# - AZURE_CREDENTIALS: Service Principal JSON (az ad sp create-for-rbac)
+# - AZURE_REGISTRY_LOGIN_SERVER: ACR login server (e.g., proyecto4acr.azurecr.io)
+# - AZURE_REGISTRY_USERNAME: ACR username
+# - AZURE_REGISTRY_PASSWORD: ACR password
+# Obtener con: az acr credential show --resource-group <RG> --name <ACR_NAME>
 
 on:
   push:
@@ -19,7 +26,7 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
 
-      # 2. Validar tests (opcional pero recomendado)
+      # 2. Ejecutar tests antes de buildear
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -30,50 +37,62 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Ejecutar tests
-        run: |
-          python -m pytest test_app.py -v --tb=short
-        continue-on-error: true  # No bloquear si los tests fallan
+      - name: Ejecutar tests con pytest
+        run: python -m pytest test_app.py -v --tb=short
 
-      # 3. Autenticarse en Azure
-      - name: Azure Login
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-        continue-on-error: true
-
-      # 4. Autenticarse en ACR (usando Azure CLI, alternativa a Docker)
-      - name: Login to ACR via Azure CLI
-        run: |
-          az acr login --name ${{ secrets.AZURE_REGISTRY_NAME }}
-        continue-on-error: true
-
-      # 5. Login manual en ACR (usando credenciales directo)
+      # 3. Autenticarse en ACR para push (solo en main, no en PRs)
       - name: Docker Login to ACR
-        uses: docker/login-action@v2
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
         with:
           registry: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}
           username: ${{ secrets.AZURE_REGISTRY_USERNAME }}
           password: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
-        continue-on-error: true
 
-      # 6. Build de la imagen Docker
+      # 4. Setup Docker Buildx para mejor caching
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 5. Build de la imagen Docker
       - name: Build Docker image
-        run: |
-          docker build \
-            -t ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/mi-backend:${{ github.sha }} \
-            -t ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/mi-backend:latest \
-            .
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: |
+            ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/mi-backend:${{ github.sha }}
+            ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/mi-backend:latest
+          cache-from: type=registry,ref=${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/mi-backend:buildcache
+          cache-to: type=registry,ref=${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/mi-backend:buildcache,mode=max
+          outputs: type=docker,dest=/tmp/image.tar
 
-      # 7. Push a ACR
+      # 6. Push a ACR solo en main
       - name: Push image to ACR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/mi-backend:${{ github.sha }}
+            ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/mi-backend:latest
+          cache-from: type=registry,ref=${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/mi-backend:buildcache
+          cache-to: type=registry,ref=${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/mi-backend:buildcache,mode=max
+
+      # 7. Validación: Verificar que imagen existe en ACR
+      - name: Validate image in ACR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/mi-backend:${{ github.sha }}
-          docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/mi-backend:latest
+          echo "🔍 Validando que la imagen existe en ACR..."
+          docker pull ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/mi-backend:latest
+          echo "✅ Imagen validada correctamente en ACR"
 
       # 8. Notificación de éxito
-      - name: Success Notification
+      - name: Build Success
         if: success()
         run: |
-          echo "✅ Build y push completados exitosamente"
-          echo "Imagen: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/mi-backend:${{ github.sha }}"
+          echo "✅ Build y push a ACR completados exitosamente"
+          echo "📦 Imagen: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/mi-backend:latest"
+          echo "🔖 Tag: ${{ github.sha }}"

@@ -47,6 +47,21 @@ def create_app() -> FastAPI:
             }
         }
     
+    @app.get("/health")
+    async def health_check():
+        """Health check endpoint para monitoreo y validación.
+        
+        Utilizado por:
+        - Azure Container Instances para validar que la app está funcionando
+        - Kubernetes/Docker para health checks
+        - Monitoreo externo
+        """
+        return {
+            "status": "ok",
+            "service": "fastapi-app-produccion",
+            "version": "1.0.0"
+        }
+    
     return app
 
 
