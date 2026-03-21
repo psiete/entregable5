@@ -4,7 +4,7 @@
 **Asignatura:** Programa Avanzado en Inteligencia Artificial para Programar  
 **Proyecto:** Entregable 5 - Automatización CI/CD y Despliegue en Azure Container Instances  
 **Fecha:** Marzo 2026  
-**Alumno:** [Tu Nombre]
+**Alumno:** Alberto Peset
 
 ---
 
@@ -900,7 +900,7 @@ Este proyecto **demuestra la implementación completa de una pipeline CI/CD mode
 
 ## 👤 Información del Alumno
 
-**Nombre:** [Tu Nombre]  
+**Nombre:** Alberto Peset 
 **Asignatura:** Programa Avanzado en Inteligencia Artificial para Programar  
 **Entidad:** UNIR  
 **Fecha de Entrega:** Marzo 2026  
