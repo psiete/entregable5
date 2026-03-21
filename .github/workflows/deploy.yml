@@ -6,9 +6,9 @@ name: Deploy to Azure Container Instances
 # - AZURE_REGISTRY_LOGIN_SERVER: ACR login server
 # - AZURE_REGISTRY_USERNAME: ACR username
 # - AZURE_REGISTRY_PASSWORD: ACR password
-# - MYSQL_USER: Usuario de MySQL
-# - MYSQL_PASSWORD: Contraseña de MySQL
-# - MYSQL_DATABASE: Nombre de la base de datos
+# - POSTGRES_USER: Usuario de PostgreSQL
+# - POSTGRES_PASSWORD: Contraseña de PostgreSQL
+# - POSTGRES_DB: Nombre de la base de datos
 
 on:
   workflow_run:
@@ -29,29 +29,29 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # 2. Obtener IP de MySQL (si el contenedor ya existe)
-      - name: Get MySQL IP
-        id: get-mysql-ip
+      # 2. Obtener IP de PostgreSQL (si el contenedor ya existe)
+      - name: Get PostgreSQL IP
+        id: get-postgres-ip
         run: |
-          echo "🔍 Buscando contenedor MySQL en producción..."
-          MYSQL_IP=$(az container show \
+          echo "🔍 Buscando contenedor PostgreSQL en producción..."
+          POSTGRES_IP=$(az container show \
             --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-            --name mysql-bd-produccion \
+            --name postgres-bd-produccion \
             --query ipAddress.ip -o tsv 2>/dev/null || echo "")
           
-          if [ -z "$MYSQL_IP" ]; then
-            echo "⚠️ Contenedor MySQL NO encontrado"
-            echo "📖 Instrucciones: Crear MySQL primero usando FASE4_DESPLIEGUE_MANUAL.md"
-            echo "   Comando: az container create --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} --name mysql-bd-produccion ..."
-            echo "mysql_ip=" >> $GITHUB_OUTPUT
+          if [ -z "$POSTGRES_IP" ]; then
+            echo "⚠️ Contenedor PostgreSQL NO encontrado"
+            echo "📖 Instrucciones: Crear PostgreSQL primero usando FASE4_DESPLIEGUE_MANUAL.md"
+            echo "   Comando: az container create --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} --name postgres-bd-produccion ..."
+            echo "postgres_ip=" >> $GITHUB_OUTPUT
           else
-            echo "✅ MySQL encontrado en IP: $MYSQL_IP"
-            echo "mysql_ip=$MYSQL_IP" >> $GITHUB_OUTPUT
+            echo "✅ PostgreSQL encontrado en IP: $POSTGRES_IP"
+            echo "postgres_ip=$POSTGRES_IP" >> $GITHUB_OUTPUT
           fi
 
       # 3. Actualizar o crear contenedor de la app
       - name: Deploy App to ACI
-        if: steps.get-mysql-ip.outputs.mysql_ip != ''
+        if: steps.get-postgres-ip.outputs.postgres_ip != ''
         run: |
           echo "🚀 Desplegando aplicación FastAPI a Azure Container Instances..."
           
@@ -69,11 +69,11 @@ jobs:
             --cpu 1 \
             --memory 1 \
             --environment-variables \
-              MYSQL_HOST="${{ steps.get-mysql-ip.outputs.mysql_ip }}" \
-              MYSQL_PORT="3306" \
-              MYSQL_USER="${{ secrets.MYSQL_USER }}" \
-              MYSQL_PASSWORD="${{ secrets.MYSQL_PASSWORD }}" \
-              MYSQL_DATABASE="${{ secrets.MYSQL_DATABASE }}" \
+              POSTGRES_HOST="${{ steps.get-postgres-ip.outputs.postgres_ip }}" \
+              POSTGRES_PORT="5432" \
+              POSTGRES_USER="${{ secrets.POSTGRES_USER }}" \
+              POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
+              POSTGRES_DB="${{ secrets.POSTGRES_DB }}" \
               APP_ENV="production" \
             --registry-login-server ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }} \
             --registry-username ${{ secrets.AZURE_REGISTRY_USERNAME }} \
@@ -84,14 +84,14 @@ jobs:
 
       # 4. Esperar a que el contenedor esté listo
       - name: Wait for deployment
-        if: steps.get-mysql-ip.outputs.mysql_ip != ''
+        if: steps.get-postgres-ip.outputs.postgres_ip != ''
         run: |
           echo "⏳ Esperando 30 segundos a que la aplicación inicie..."
           sleep 30
 
       # 5. Obtener detalles de la aplicación desplegada
       - name: Get deployment info
-        if: steps.get-mysql-ip.outputs.mysql_ip != ''
+        if: steps.get-postgres-ip.outputs.postgres_ip != ''
         id: get-app-info
         run: |
           echo "📋 Obteniendo información del despliegue..."
@@ -111,7 +111,7 @@ jobs:
 
       # 6. Validación: Intentar acceder al healthcheck
       - name: Validate application deployment
-        if: steps.get-mysql-ip.outputs.mysql_ip != ''
+        if: steps.get-postgres-ip.outputs.postgres_ip != ''
         run: |
           echo "🧪 Validando que la aplicación está accesible..."
           
@@ -130,7 +130,7 @@ jobs:
 
       # 7. Resumen del despliegue
       - name: Deployment Summary
-        if: steps.get-mysql-ip.outputs.mysql_ip != ''
+        if: steps.get-postgres-ip.outputs.postgres_ip != ''
         run: |
           echo "════════════════════════════════════════════════════"
           echo "✅ DESPLIEGUE COMPLETADO EXITOSAMENTE"
@@ -151,16 +151,16 @@ jobs:
           echo "════════════════════════════════════════════════════"
 
       - name: Deployment Warning
-        if: steps.get-mysql-ip.outputs.mysql_ip == ''
+        if: steps.get-postgres-ip.outputs.postgres_ip == ''
         run: |
           echo "❌ DESPLIEGUE NO COMPLETADO"
           echo ""
-          echo "⚠️ El contenedor de MySQL no está desplegado"
+          echo "⚠️ El contenedor de PostgreSQL no está desplegado"
           echo ""
-          echo "📖 Para desplegar MySQL primero:"
+          echo "📖 Para desplegar PostgreSQL primero:"
           echo "   1. Seguir los pasos en FASE4_DESPLIEGUE_MANUAL.md"
-          echo "   2. Crear un contenedor MySQL en ACI"
+          echo "   2. Crear un contenedor PostgreSQL en ACI"
           echo "   3. Luego, re-ejecutar este workflow"
           echo ""
-          echo "Una vez MySQL esté listo, el próximo push a main desplegará la aplicación automáticamente"
+          echo "Una vez PostgreSQL esté listo, el próximo push a main desplegará la aplicación automáticamente"
           exit 1
