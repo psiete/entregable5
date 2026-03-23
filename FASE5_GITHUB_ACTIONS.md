@@ -74,7 +74,6 @@ Copiar este JSON completo.
 | `AZURE_REGISTRY_USERNAME` | Username de ACR |
 | `AZURE_REGISTRY_PASSWORD` | Password de ACR |
 | `AZURE_REGISTRY_NAME` | `proyecto5acr` |
-| `AZURE_CREDENTIALS` | JSON completo del Service Principal |
 | `POSTGRES_USER` | `proyecto_user` |
 | `POSTGRES_PASSWORD` | Tu contraseña fuerte |
 | `POSTGRES_DB` | `proyecto_db` |
