@@ -30,12 +30,12 @@ az acr show --resource-group Proyecto4RG --name proyecto4acr --query loginServer
 az acr credential show --resource-group Proyecto4RG --name proyecto4acr
 ```
 
-**MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE:**
+**POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB:**
 ```bash
 # Usar los valores definidos en el paso 4.1 de FASE4_DESPLIEGUE_MANUAL.md
-MYSQL_USER="proyecto_user"
-MYSQL_PASSWORD="TuPassword123!Segura"
-MYSQL_DATABASE="proyecto_db"
+POSTGRES_USER="proyecto_user"
+POSTGRES_PASSWORD="TuPassword123!Segura"
+POSTGRES_DB="proyecto_db"
 ```
 
 **AZURE_CREDENTIALS (para Azure Login):**
@@ -75,9 +75,9 @@ Copiar este JSON completo.
 | `AZURE_REGISTRY_PASSWORD` | Password de ACR |
 | `AZURE_REGISTRY_NAME` | `proyecto4acr` |
 | `AZURE_CREDENTIALS` | JSON completo del Service Principal |
-| `MYSQL_USER` | `proyecto_user` |
-| `MYSQL_PASSWORD` | Tu contraseña fuerte |
-| `MYSQL_DATABASE` | `proyecto_db` |
+| `POSTGRES_USER` | `proyecto_user` |
+| `POSTGRES_PASSWORD` | Tu contraseña fuerte |
+| `POSTGRES_DB` | `proyecto_db` |
 
 ### 3. Verificación
 
@@ -100,7 +100,7 @@ El proyecto configura 3 workflows separados que trabajan en conjunto:
 
 **Pasos:**
 1. Checkout del código
-2. Setup de Python 3.11
+2. Setup de Python 3.12
 3. Instalación de dependencias (pip install -r requirements.txt)
 4. Ejecución de tests (pytest test_app.py -v)
 5. Linting básico (black, flake8) - sin bloquear
@@ -119,7 +119,7 @@ El proyecto configura 3 workflows separados que trabajan en conjunto:
 
 **Pasos:**
 1. Checkout del código
-2. Setup de Python para ejecutar tests previos
+2. Setup de Python 3.12 para ejecutar tests previos
 3. Instalación de dependencias
 4. Ejecución de tests (pytest)
 5. Login en Docker (ACR)
@@ -147,12 +147,12 @@ El proyecto configura 3 workflows separados que trabajan en conjunto:
 
 **Pasos:**
 1. Login en Azure
-2. Búsqueda de MySQL existente (si no existe, skip del deployment)
+2. Búsqueda de PostgreSQL existente (si no existe, skip del deployment)
 3. Eliminación del contenedor anterior de la app (si existe)
 4. Creación de nuevo contenedor de la aplicación con:
    - Imagen desde ACR: `mi-backend:latest`
    - Recursos: 1 CPU, 1 GB RAM
-   - Variables de entorno de MySQL y config
+   - Variables de entorno de PostgreSQL y config
    - Puerto: 8000
    - Política de reinicio: OnFailure
 5. Espera de 30 segundos para que la app inicie
@@ -168,9 +168,9 @@ El proyecto configura 3 workflows separados que trabajan en conjunto:
 - `AZURE_REGISTRY_LOGIN_SERVER`
 - `AZURE_REGISTRY_USERNAME`
 - `AZURE_REGISTRY_PASSWORD`
-- `MYSQL_USER`
-- `MYSQL_PASSWORD`
-- `MYSQL_DATABASE`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_DB`
 
 **Salida:** Aplicación desplegada en ACI en una IP pública accesible, con resumen de URLs y comandos
 
@@ -311,16 +311,16 @@ az acr repository delete \
 
 ### ❌ Solucionar fallos: Workflow Deploy (deploy.yml)
 
-**Problema:** Deployment no inicia porque MySQL no existe ⚠️
+**Problema:** Deployment no inicia porque PostgreSQL no existe ⚠️
 
 **Mensaje en logs:**
 ```
-⚠️ Contenedor MySQL NO encontrado
-📖 Instrucciones: Crear MySQL primero usando FASE4_DESPLIEGUE_MANUAL.md
+⚠️ Contenedor PostgreSQL NO encontrado
+📖 Instrucciones: Crear PostgreSQL primero en Azure
 ```
 
 **Solución:** 
-Primero se DEBE desplegar MySQL manualmente (ver [FASE4_DESPLIEGUE_MANUAL.md](FASE4_DESPLIEGUE_MANUAL.md)), luego hacer push a main para que se ejecute el deploy workflow.
+Primero se DEBE desplegar PostgreSQL en Azure, luego hacer push a main para que se ejecute el deploy workflow.
 
 ---
 
@@ -359,9 +359,9 @@ az container logs \
 
 ---
 
-**Problema:** Aplicación desplegada pero no conecta a MySQL ❌
+**Problema:** Aplicación desplegada pero no conecta a PostgreSQL ❌
 
-**Causa:** Variables de entorno MYSQL_* son incorrectas
+**Causa:** Variables de entorno POSTGRES_* son incorrectas
 
 **Solución:**
 ```bash
@@ -371,14 +371,14 @@ az container show \
   --name fastapi-app-produccion \
   --query containers[0].environmentVariables
 
-# Verificar que MYSQL_HOST contiene la IP correcta del contenedor MySQL
-# Verificar que MYSQL_USER, MYSQL_PASSWORD y MYSQL_DATABASE coinciden con MySQL
+# Verificar que POSTGRES_HOST contiene la IP correcta del contenedor PostgreSQL
+# Verificar que POSTGRES_USER, POSTGRES_PASSWORD y POSTGRES_DB coinciden con PostgreSQL
 
 # Revisar logs para error de conexión
 az container logs \
   --resource-group Proyecto4RG \
   --name fastapi-app-produccion \
-  | grep -i "mysql\|connection\|error"
+  | grep -i "postgres\|connection\|error"
 ```
 
 ---
@@ -436,6 +436,6 @@ az acr delete --resource-group Proyecto4RG --name proyecto4acr --yes
 
 - ⚠️ Los secrets de GitHub están encriptados y no son visibles en los logs
 - ⚠️ No compartir el AZURE_CREDENTIALS JSON con nadie
-- ⚠️ Cambiar las contraseñas de MYSQL_USER y MYSQL_ROOT_PASSWORD después del despliegue inicial
+- ⚠️ Cambiar la contraseña de POSTGRES_PASSWORD después del despliegue inicial
 - ✅ Los secrets expiran cuando se rota la contraseña en Azure
 

@@ -1,6 +1,6 @@
 # Proyecto 4 - Entregable 5: CI/CD y Despliegue en Azure
 
-Implementación completa de **pipeline de integración continua y despliegue continuo (CI/CD)** para una aplicación FastAPI con base de datos MySQL, contenerizada con Docker y desplegada automáticamente en Azure Container Instances (ACI).
+Implementación completa de **pipeline de integración continua y despliegue continuo (CI/CD)** para una aplicación FastAPI con base de datos PostgreSQL, contenerizada con Docker y desplegada automáticamente en Azure Container Instances (ACI).
 
 ## 🎯 Objetivos Alcanzados
 
@@ -47,7 +47,7 @@ cp .env.example .env  # (ya existe .env configurado)
 
 ### 2. Ejecutar con Docker Compose
 ```bash
-# Build e iniciar contenedores (app + MySQL)
+# Build e iniciar contenedores (app + PostgreSQL)
 docker-compose up --build
 
 # La aplicación estará en: http://localhost:8000
@@ -83,13 +83,13 @@ Este Entregable 5 incluye:
 
 3. **Configurar Secrets en GitHub** (9 valores)
    - Acceder a Settings → Secrets and variables → Actions
-   - Crear secrets: `AZURE_REGISTRY_*`, `AZURE_CREDENTIALS`, `MYSQL_*`, etc.
+   - Crear secrets: `AZURE_REGISTRY_*`, `AZURE_CREDENTIALS`, `POSTGRES_*`, etc.
 
 ### 🔴 **REQUERIDA ACCIÓN MANUAL - Fase 4: Despliegue Inicial**
 
 Una vez configurado ACR:
 
-1. **Desplegar Base de Datos MySQL en ACI**
+1. **Desplegar Base de Datos PostgreSQL en ACI**
    ```bash
    # Ver FASE4_DESPLIEGUE_MANUAL.md para comando completo
    az container create ... (contiene las variables correctas)
@@ -110,7 +110,7 @@ cp .env.example .env
 
 ### 2. Ejecutar con Docker Compose
 ```bash
-# Build e iniciar contenedores (app + MySQL)
+# Build e iniciar contenedores (app + PostgreSQL)
 docker-compose up --build
 
 # La aplicación estará en: http://localhost:8000
@@ -189,10 +189,10 @@ curl http://localhost:8000/api/user-stories
 Se ha validado el funcionamiento completo:
 
 ```bash
-✅ MySQL: Inicia correctamente con healthcheck
+✅ PostgreSQL: Inicia correctamente con healthcheck
 ✅ FastAPI: Responde en puerto 8000
 ✅ Health Check: {"status":"ok","service":"fastapi-app-produccion",...}
-✅ Conectividad BD: Endpoints retornan datos desde MySQL
+✅ Conectividad BD: Endpoints retornan datos desde PostgreSQL
 ✅ Docker Compose: Ambos servicios corriendo sin errores
 ```
 
@@ -209,7 +209,7 @@ docker-compose up --build
 ### Ver logs
 ```bash
 docker-compose logs -f app
-docker-compose logs -f mysql
+docker-compose logs -f postgres
 ```
 
 ### Ejecutar tests
@@ -243,7 +243,7 @@ Para información detallada sobre:
 **Fin del README - Entregable 5**
 
 1. **Completar Fase 3**: Crear ACR en Azure
-2. **Completar Fase 4**: Desplegar MySQL y app manualmente
+2. **Completar Fase 4**: Desplegar PostgreSQL y app manualmente
 3. **Configurar Fase 5**: Secrets en GitHub
 4. **Monitorear Fase 6**: Validar que todo funciona
 

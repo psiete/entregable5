@@ -9,7 +9,7 @@
 
 ## RESUMEN EJECUTIVO
 
-Este informe documenta la implementación completa de un pipeline CI/CD para despliegue automatizado de una aplicación backend FastAPI con MySQL en Azure Container Instances. Se cumplen todos los 6 pasos requeridos:
+Este informe documenta la implementación completa de un pipeline CI/CD para despliegue automatizado de una aplicación backend FastAPI con PostgreSQL en Azure Container Instances. Se cumplen todos los 6 pasos requeridos:
 
 1. ✅ **Configuración del Entorno** - Repositorio GitHub + Código estructurado + .env
 2. ✅ **Contenerización** - Dockerfile + docker-compose.yml
@@ -22,7 +22,7 @@ Este informe documenta la implementación completa de un pipeline CI/CD para des
 
 ## OBJETIVO GENERAL
 
-Implementar un **pipeline de integración continua y despliegue continuo** que automatice la compilación, testing, empaquetamiento y despliegue de una aplicación FastAPI con base de datos MySQL en Azure, cumpliendo estándares modernos de DevOps.
+Implementar un **pipeline de integración continua y despliegue continuo** que automatice la compilación, testing, empaquetamiento y despliegue de una aplicación FastAPI con base de datos PostgreSQL en Azure, cumpliendo estándares modernos de DevOps.
 
 ---
 
@@ -45,10 +45,10 @@ Proyecto4/
 
 **Variables de Entorno Necesarias:**
 ```env
-MYSQL_HOST=mysql
-MYSQL_USER=proyecto_user
-MYSQL_PASSWORD=ProyectoPass123!
-MYSQL_DATABASE=proyecto_db
+POSTGRES_HOST=postgres
+POSTGRES_USER=proyecto_user
+POSTGRES_PASSWORD=ProyectoPass123!
+POSTGRES_DB=proyecto_db
 ```
 
 ---
@@ -67,7 +67,7 @@ CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 **docker-compose.yml:**
-- MySQL 8.0 con healthcheck
+- PostgreSQL 16-alpine con healthcheck
 - FastAPI con depends_on
 - Volúmenes persistentes para datos
 - init.sql para inicialización
@@ -100,14 +100,14 @@ docker push proyecto4acr.azurecr.io/mi-backend:latest
 ## PASO 4: DESPLIEGUE EN AZURE (ACI)
 
 ```bash
-# Crear MySQL (prerequisito)
+# Crear PostgreSQL (prerequisito)
 az container create \
   --resource-group Proyecto4RG \
-  --name mysql-bd-produccion \
-  --image mysql:8.0 \
+  --name postgres-bd-produccion \
+  --image postgres:16-alpine \
   --cpu 1 --memory 1 \
-  --environment-variables MYSQL_ROOT_PASSWORD="..." MYSQL_USER="..." \
-  --ports 3306
+  --environment-variables POSTGRES_PASSWORD="..." POSTGRES_USER="..." \
+  --ports 5432
 
 # Desplegar aplicación FastAPI
 az container create \
