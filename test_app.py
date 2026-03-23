@@ -39,7 +39,7 @@ class TestHomeRoute:
             client: Cliente de prueba fixture
         """
         response = client.get('/')
-        data = response.get_json()
+        data = response.json()
         
         assert data is not None
         assert 'message' in data
