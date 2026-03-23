@@ -17,17 +17,17 @@ az account show --query id -o tsv
 
 **AZURE_RESOURCE_GROUP:**
 ```bash
-echo "Proyecto4RG"  # O el nombre de tu resource group
+echo "Proyecto5psiete"  # O el nombre de tu resource group
 ```
 
 **AZURE_REGISTRY_LOGIN_SERVER:**
 ```bash
-az acr show --resource-group Proyecto4RG --name proyecto4acr --query loginServer -o tsv
+az acr show --resource-group Proyecto5psiete --name proyecto5acr --query loginServer -o tsv
 ```
 
 **AZURE_REGISTRY_USERNAME y AZURE_REGISTRY_PASSWORD:**
 ```bash
-az acr credential show --resource-group Proyecto4RG --name proyecto4acr
+az acr credential show --resource-group Proyecto5psiete --name proyecto5acr
 ```
 
 **POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB:**
@@ -69,11 +69,11 @@ Copiar este JSON completo.
 | Secret Name | Valor |
 |---|---|
 | `AZURE_SUBSCRIPTION_ID` | ID de suscripción |
-| `AZURE_RESOURCE_GROUP` | `Proyecto4RG` |
-| `AZURE_REGISTRY_LOGIN_SERVER` | `proyecto4acr.azurecr.io` |
+| `AZURE_RESOURCE_GROUP` | `Proyecto5psiete` |
+| `AZURE_REGISTRY_LOGIN_SERVER` | `proyecto5acr.azurecr.io` |
 | `AZURE_REGISTRY_USERNAME` | Username de ACR |
 | `AZURE_REGISTRY_PASSWORD` | Password de ACR |
-| `AZURE_REGISTRY_NAME` | `proyecto4acr` |
+| `AZURE_REGISTRY_NAME` | `proyecto5acr` |
 | `AZURE_CREDENTIALS` | JSON completo del Service Principal |
 | `POSTGRES_USER` | `proyecto_user` |
 | `POSTGRES_PASSWORD` | Tu contraseña fuerte |

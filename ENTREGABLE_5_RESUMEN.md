@@ -85,15 +85,15 @@ curl http://localhost:8000/health
 
 ```bash
 # Crear ACR
-az acr create --resource-group Proyecto4RG --name proyecto4acr --sku Basic
+az acr create --resource-group Proyecto5psiete --name proyecto5acr --sku Basic
 
 # Build y push (automático via GitHub Actions)
-docker build -t proyecto4acr.azurecr.io/mi-backend:latest .
+docker build -t proyecto5acr.azurecr.io/mi-backend:latest .
 az acr login --name proyecto4acr
-docker push proyecto4acr.azurecr.io/mi-backend:latest
+docker push proyecto5acr.azurecr.io/mi-backend:latest
 ```
 
-**Imagen disponible en:** `proyecto4acr.azurecr.io/mi-backend:latest`
+**Imagen disponible en:** `proyecto5acr.azurecr.io/mi-backend:latest`
 
 ---
 
@@ -102,7 +102,7 @@ docker push proyecto4acr.azurecr.io/mi-backend:latest
 ```bash
 # Crear PostgreSQL (prerequisito)
 az container create \
-  --resource-group Proyecto4RG \
+  --resource-group Proyecto5psiete \
   --name postgres-bd-produccion \
   --image postgres:16-alpine \
   --cpu 1 --memory 1 \
@@ -111,7 +111,7 @@ az container create \
 
 # Desplegar aplicación FastAPI
 az container create \
-  --resource-group Proyecto4RG \
+  --resource-group Proyecto5psiete \
   --name fastapi-app-produccion \
   --image proyecto4acr.azurecr.io/mi-backend:latest \
   --cpu 1 --memory 1 \
@@ -154,25 +154,11 @@ async def health_check():
 curl http://<IP-PUBLICA>:8000/health
 
 # Logs de aplicación
-az container logs -g Proyecto4RG -n fastapi-app-produccion --follow
+az container logs -g Proyecto5psiete -n fastapi-app-produccion --follow
 
 # Estado de contenedores
-az container list -g Proyecto4RG --output table
+az container list -g Proyecto5psiete --output table
 ```
-
----
-
-## EVALUACIÓN CONTRA RÚBRICA
-
-| Criterio | Puntos | Estado |
-|----------|--------|--------|
-| **Configuración Entorno** | 1.5 | ✅ |
-| **Contenerización** | 1.5 | ✅ |
-| **Registro Azure (ACR)** | 2 | ✅ |
-| **Despliegue Azure (ACI)** | 2 | ✅ |
-| **Pipeline CI/CD** | 2 | ✅ |
-| **Monitoreo y Validación** | 1 | ✅ |
-| **TOTAL** | **10** | ✅ **10/10** |
 
 ---
 
